@@ -1,16 +1,18 @@
 import { useMemo, useState } from 'react'
-import { AlertTriangle, Check, Download, HardDrive, Shield, Upload } from 'lucide-react'
+import { AlertTriangle, Check, Download, HardDrive, Shield, Trash2, Upload } from 'lucide-react'
 import type { AppSettings, BackupFile, Repertoire, RepertoireEntry, Song } from '../types'
 import { createBackup, mergeBackup, restoreBackup, validateBackup } from '../services/backup'
 
-export default function SettingsPage({ songs, repertoires, entries, settings, persisted, onRefresh, onSettings }: {
+export default function SettingsPage({ songs, repertoires, entries, settings, persisted, onRefresh, onSettings, onClearSongs }: {
   songs: Song[]; repertoires: Repertoire[]; entries: RepertoireEntry[]; settings: AppSettings; persisted: boolean | null
   onRefresh: () => Promise<void>; onSettings: (settings: AppSettings) => Promise<void>
+  onClearSongs: () => Promise<void>
 }) {
   const [backup, setBackup] = useState<BackupFile | null>(null)
   const [mode, setMode] = useState<'merge' | 'replace'>('merge')
   const [conflict, setConflict] = useState<'keep' | 'replace'>('keep')
   const [confirmRestore, setConfirmRestore] = useState(false)
+  const [confirmClear, setConfirmClear] = useState(false)
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -54,11 +56,23 @@ export default function SettingsPage({ songs, repertoires, entries, settings, pe
     setMessage('Descarguei unha copia previa. Garda o ficheiro antes de confirmar a substitución.')
   }
 
+  const clearSongs = async () => {
+    setBusy(true); setMessage('')
+    try {
+      await onClearSongs()
+      setConfirmClear(false)
+      setMessage('Cancioneiro baleirado. Xa podes comezar de novo.')
+    } catch (error) { setMessage(error instanceof Error ? error.message : 'Non se puideron borrar as cancións.') }
+    finally { setBusy(false) }
+  }
+
   return <section className="settings-page"><div className="page-heading"><div><span className="eyebrow">DATOS BAIXO O TEU CONTROL</span><h1>Axustes e copias</h1><p>A base queda neste navegador. Usa JSON para pasar cancións entre o iPhone e o Mac.</p></div></div>
     <div className="storage-card"><HardDrive size={20}/><div><b>{persisted === true ? 'Almacenamento local persistente solicitado' : persisted === false ? 'O navegador non garante conservar os datos' : 'Comprobando almacenamento local…'}</b><p>{counts.songs} cancións · {counts.repertoires} repertorios · {counts.entries} relacións</p></div><Shield size={19}/></div>
     <div className="settings-grid"><article className="settings-card"><span className="settings-icon"><Download/></span><h2>Exportar a base de datos</h2><p>Garda cancións, acordes, repertorios, tonalidades, favoritos e axustes nun ficheiro JSON versionado.</p><button className="primary-button" onClick={() => void exportNow()}><Download size={17}/> Descargar copia completa</button></article><article className="settings-card"><span className="settings-icon"><Upload/></span><h2>Importar / transferir</h2><p>Escolle unha copia JSON deste cancioneiro. Podes fusionala cos datos locais ou restaurala.</p><label className="file-picker"><Upload size={17}/> Escoller copia JSON<input type="file" accept="application/json,.json" onChange={e => void readFile(e.target.files?.[0])}/></label></article></div>
+    <section className="reset-card"><div><span className="eyebrow">COMEZAR DE NOVO</span><h2>Borrar todas as cancións</h2><p>Elimina as {counts.songs} cancións e as súas aparicións nos repertorios. Os repertorios e os axustes conservaranse. Esta acción non se pode desfacer.</p></div><button className="danger-button" disabled={!counts.songs} onClick={() => setConfirmClear(true)}><Trash2 size={16}/> Borrar cancións</button></section>
     {backup && <section className="backup-preview"><div className="backup-preview-head"><span className="eyebrow">VISTA PREVIA</span><h2>Revisa antes de importar</h2><p>Creada o {new Date(backup.createdAt).toLocaleString('gl-ES')} · formato v{backup.formatVersion}</p></div><div className="backup-counts"><span><b>{backup.songs.length}</b> cancións</span><span><b>{backup.repertoires.length}</b> repertorios</span><span><b>{newSongs}</b> cancións novas</span><span><b>{conflicts}</b> cambios no mesmo ID</span></div><div className="backup-options"><label><input type="radio" checked={mode === 'merge'} onChange={() => { setMode('merge'); setConfirmRestore(false) }}/> Fusionar co cancioneiro actual</label><label><input type="radio" checked={mode === 'replace'} onChange={() => { setMode('replace'); setConfirmRestore(false) }}/> Substituír a base actual</label></div>{mode === 'merge' && conflicts > 0 && <div className="conflict-choice"><b>{conflicts} canción(s) modificadas tamén neste dispositivo.</b><label><input type="radio" checked={conflict === 'keep'} onChange={() => setConflict('keep')}/> Manter a versión local</label><label><input type="radio" checked={conflict === 'replace'} onChange={() => setConflict('replace')}/> Usar a versión da copia</label></div>}{mode === 'replace' && !confirmRestore ? <button className="danger-button" onClick={() => void armRestore()}><Download size={16}/> Descargar copia previa antes de restaurar</button> : <button className={mode === 'replace' ? 'danger-button' : 'primary-button'} onClick={() => void apply()} disabled={busy}>{busy ? 'Aplicando…' : mode === 'replace' ? 'Confirmar restauración' : 'Fusionar copia'}</button>}</section>}
     {message && <p className="status-message"><Check size={16}/>{message}</p>}
+    {confirmClear && <div className="confirm-overlay"><section className="confirm-card" role="dialog" aria-modal="true" aria-labelledby="clear-title"><AlertTriangle size={25}/><h3 id="clear-title">Reiniciar o cancioneiro?</h3><p>Borraranse permanentemente {counts.songs} {counts.songs === 1 ? 'canción' : 'cancións'} e {counts.entries} {counts.entries === 1 ? 'referencia nos repertorios' : 'referencias nos repertorios'}. Os repertorios baleiros e os axustes quedarán gardados. Se queres conservar os datos, cancela e descarga antes unha copia completa.</p><div><button className="secondary-button" disabled={busy} onClick={() => setConfirmClear(false)}>Cancelar</button><button className="danger-button" disabled={busy} onClick={() => void clearSongs()}><Trash2 size={16}/>{busy ? 'Borrando…' : 'Borrar e reiniciar'}</button></div></section></div>}
     <section className="settings-note"><AlertTriangle size={17}/><p>Se limpas os datos do sitio no navegador, podes perder a base local. Garda copias JSON fóra da aplicación con regularidade. O ficheiro contén as túas letras e notas en texto lexible.</p></section>
     <label className="wake-option"><input type="checkbox" checked={settings.keepAwake} onChange={e => void onSettings({ ...settings, keepAwake: e.target.checked })}/> Tentar manter a pantalla activa durante a interpretación e o metrónomo</label>
   </section>

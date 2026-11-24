@@ -67,6 +67,13 @@ export default function App() {
     })
     await refresh(); setToast('Canción eliminada.')
   }
+  const clearSongs = async () => {
+    await db.transaction('rw', db.songs, db.entries, async () => {
+      await db.songs.clear()
+      await db.entries.clear()
+    })
+    await refresh()
+  }
   const saveRepertoire = async (item: Repertoire) => { await db.repertoires.put(item); await refresh(); setToast('Repertorio gardado.') }
   const deleteRepertoire = async (item: Repertoire) => { await db.transaction('rw', db.repertoires, db.entries, async () => { await db.repertoires.delete(item.id); await db.entries.where('repertoireId').equals(item.id).delete() }); await refresh() }
   const saveEntries = async (items: RepertoireEntry[], repertoireId: string) => {
@@ -129,7 +136,7 @@ export default function App() {
         {tab === 'songs' && <Library songs={songs} onEdit={editSong} onView={song => showPerformance(song, '')} onNew={createSong} onImport={openImporter} onDelete={song => void deleteSong(song)} onExportSong={exportSong} onExportMany={items => exportMany(items)}/>}
         {tab === 'repertoires' && <Repertoires repertoires={repertoires} songs={songs} entries={entries} onSave={saveRepertoire} onDelete={deleteRepertoire} onEntries={saveEntries} onPerform={showPerformance} onExport={exportMany}/>}
         {tab === 'metronome' && <Metronome settings={settings} onSettings={updateSettings}/>}
-        {tab === 'settings' && <SettingsPage songs={songs} repertoires={repertoires} entries={entries} settings={settings} persisted={persisted} onRefresh={refresh} onSettings={updateSettings}/>}
+        {tab === 'settings' && <SettingsPage songs={songs} repertoires={repertoires} entries={entries} settings={settings} persisted={persisted} onRefresh={refresh} onSettings={updateSettings} onClearSongs={clearSongs}/>}
       </main>
     </div>
     <nav className="bottom-nav">{navItems.map(([id, Icon, label]) => <button key={id} className={tab === id ? 'active' : ''} onClick={() => currentTab(id as Tab)}><Icon size={19}/><span>{label}</span></button>)}</nav>
