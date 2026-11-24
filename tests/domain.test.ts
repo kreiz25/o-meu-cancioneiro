@@ -3,7 +3,21 @@ import assert from 'node:assert/strict'
 import { chordSymbols, decodeChordPro, editorTextToDocument, exportChordPro, parseChordPro } from '../src/domain/chordpro.ts'
 import { insertChordAtCursor, intervalBetweenKeys, prefersFlats, transposeChord, transposeKey } from '../src/domain/music.ts'
 import { validateBackup } from '../src/domain/backup-validation.ts'
+import { songMatchesQuery } from '../src/domain/search.ts'
 import { createStoredZip } from '../src/services/archive.ts'
+
+test('a busca da biblioteca atopa termos na letra e nos acordes sen distinguir acentos', () => {
+  const parsed = parseChordPro('{title: Vento do norte}\n{artist: A Banda}\n[G]Camiño longo, [D]vou cantar')
+  const song = {
+    title: parsed.title, subtitle: parsed.subtitle, artist: parsed.artist, tags: ['viaxe'], document: parsed.document,
+  } as import('../src/types.ts').Song
+
+  assert.equal(songMatchesQuery(song, 'camiño'), true)
+  assert.equal(songMatchesQuery(song, 'CAMINO'), true)
+  assert.equal(songMatchesQuery(song, 'D cantar'), true)
+  assert.equal(songMatchesQuery(song, 'norte viaxe'), true)
+  assert.equal(songMatchesQuery(song, 'mar'), false)
+})
 
 test('ChordPro interpreta metadatos, seccións, acordes e directivas descoñecidas', () => {
   const parsed = parseChordPro([

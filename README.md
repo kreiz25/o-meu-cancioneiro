@@ -41,7 +41,7 @@ As copias inclúen cancións, acordes estruturados, repertorios, orde, tonalidad
 
 ## Funcións implementadas
 
-- Biblioteca local con creación, edición, busca, favoritas, duplicado e eliminación confirmada.
+- Biblioteca local con creación, edición, busca por título, artista, etiquetas, acordes e letra, favoritas, duplicado e eliminación confirmada.
 - Editor ChordPro con barra de acordes, inserción na posición do cursor, detección, favoritos, recentes e busca.
 - Importación por lotes de `.pro`, `.chopro`, `.cho` e `.crd`; revisión previa, validación polo contido, BOM/finais de liña e UTF-8/UTF-16/Windows-1252.
 - Exportación ChordPro por canción, conservando seccións, acordes e directivas descoñecidas.
