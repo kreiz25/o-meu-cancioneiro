@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
-import { ArrowDown, ArrowUp, Download, Music2, Pencil, Play, Plus, Trash2, X } from 'lucide-react'
+import { useMemo, useRef, useState } from 'react'
+import { ArrowDown, ArrowUp, Download, Music2, Pencil, Play, Plus, Search, Trash2, X } from 'lucide-react'
 import type { Repertoire, RepertoireEntry, Song } from '../types'
+import { songMatchesQuery } from '../domain/search'
 
 export default function Repertoires({ repertoires, songs, entries, onSave, onDelete, onEntries, onPerform, onExport }: {
   repertoires: Repertoire[]; songs: Song[]; entries: RepertoireEntry[]
@@ -33,6 +34,8 @@ function RepertoireDetail({ item, songs, entries, onClose, onEntries, onEdit, on
   onExport: (songs: Song[], name: string) => void
 }) {
   const [adding, setAdding] = useState(false)
+  const [songQuery, setSongQuery] = useState('')
+  const songList = useRef<HTMLDivElement>(null)
   const ordered = [...entries].sort((a, b) => a.position - b.position)
   const byId = new Map(songs.map(song => [song.id, song]))
   const queue = ordered.flatMap(entry => { const song = byId.get(entry.songId); return song ? [{ song, key: entry.performanceKey }] : [] })
@@ -45,10 +48,24 @@ function RepertoireDetail({ item, songs, entries, onClose, onEntries, onEdit, on
     await onEntries(copy.map((row, index) => ({ ...row, position: index })), item.id)
   }
   const updateKey = async (entry: RepertoireEntry, performanceKey: string) => onEntries(ordered.map(row => row.id === entry.id ? { ...row, performanceKey } : row), item.id)
+  const availableSongs = useMemo(() => songs
+    .filter(song => !entries.some(entry => entry.songId === song.id))
+    .sort((a, b) => a.title.localeCompare(b.title, 'gl')), [songs, entries])
+  const filteredSongs = useMemo(() => availableSongs.filter(song => songMatchesQuery(song, songQuery)), [availableSongs, songQuery])
+  const songGroups = useMemo(() => {
+    const groups = new Map<string, Song[]>()
+    for (const song of filteredSongs) {
+      const initial = song.title.trim().charAt(0).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleUpperCase('gl')
+      const letter = /^[A-Z]$/.test(initial) ? initial : '#'
+      groups.set(letter, [...(groups.get(letter) ?? []), song])
+    }
+    return groups
+  }, [filteredSongs])
+  const jumpToLetter = (letter: string) => songList.current?.querySelector<HTMLElement>(`[data-letter="${letter}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
   return <div className="modal-backdrop"><section className="repertoire-detail"><header className="sheet-header"><button className="icon-button" onClick={onClose}><X/></button><div><span className="eyebrow">MODO ACTUACIÓN</span><h2>{item.name}</h2></div><div className="detail-header-actions"><button className="secondary-button" disabled={!queue.length} onClick={() => onExport(queue.map(row => row.song), item.name)}><Download size={15}/> .zip</button><button className="secondary-button" onClick={onEdit}><Pencil size={15}/> Editar</button><button className="primary-button" disabled={!queue.length} onClick={() => onPerform(queue[0].song, queue[0].key, queue)}><Play fill="currentColor" size={15}/> Tocar</button></div></header>
     {item.description && <p className="repertoire-description">{item.description}</p>}<div className="performance-list">{ordered.map((entry, index) => { const song = byId.get(entry.songId); if (!song) return null; return <article key={entry.id}><span className="entry-number">{index + 1}</span><button className="entry-song" onClick={() => onPerform(song, entry.performanceKey)}><b>{song.title}</b><small>{song.artist}</small></button><input className="entry-key" value={entry.performanceKey} onChange={e => void updateKey(entry, e.target.value)} placeholder={song.originalKey || 'Key'} aria-label={`Tonalidade de ${song.title} neste repertorio`}/><button className="reorder" disabled={index === 0} onClick={() => void move(entry, -1)} aria-label="Mover arriba"><ArrowUp size={15}/></button><button className="reorder" disabled={index === ordered.length - 1} onClick={() => void move(entry, 1)} aria-label="Mover abaixo"><ArrowDown size={15}/></button><button className="reorder remove" onClick={() => void remove(entry)} aria-label="Quitar do repertorio"><X size={15}/></button></article> })}</div>
-    <button className="add-song-button" onClick={() => setAdding(true)}><Plus size={17}/> Engadir canción</button>
-    {adding && <div className="add-song-overlay"><div className="add-song-sheet"><header><h3>Engadir ao repertorio</h3><button className="icon-button" onClick={() => setAdding(false)}><X/></button></header>{songs.filter(song => !entries.some(entry => entry.songId === song.id)).map(song => <button className="add-song-row" key={song.id} onClick={() => { void add(song); setAdding(false) }}><span><b>{song.title}</b><small>{song.artist}</small></span><Plus size={17}/></button>)||null}{songs.every(song => entries.some(entry => entry.songId === song.id)) && <p className="empty-chords">Non hai cancións dispoñibles para engadir.</p>}</div></div>}
+    <button className="add-song-button" onClick={() => { setSongQuery(''); setAdding(true) }}><Plus size={17}/> Engadir canción</button>
+    {adding && <div className="add-song-overlay"><section className="add-song-sheet" role="dialog" aria-modal="true" aria-labelledby="add-song-title"><header><h3 id="add-song-title">Engadir ao repertorio</h3><button className="icon-button" onClick={() => setAdding(false)} aria-label="Pechar"><X/></button></header><label className="add-song-search"><Search size={16}/><input autoFocus value={songQuery} onChange={event => setSongQuery(event.target.value)} placeholder="Buscar por título, artista ou letra" aria-label="Buscar cancións para engadir"/></label><div className="add-song-browser"><div className="add-song-list" ref={songList}>{[...songGroups].map(([letter, group]) => <section className="add-song-group" data-letter={letter} key={letter}><h4>{letter}</h4>{group.map(song => <button className="add-song-row" key={song.id} onClick={() => { void add(song); setAdding(false) }}><span><b>{song.title}</b><small>{song.artist || 'Artista descoñecido'}</small></span><Plus size={17}/></button>)}</section>)}{filteredSongs.length === 0 && <p className="empty-chords">{availableSongs.length ? 'Non hai cancións que coincidan coa busca.' : 'Non hai cancións dispoñibles para engadir.'}</p>}</div>{songGroups.size > 0 && <nav className="song-alphabet-index" aria-label="Índice alfabético">{[...songGroups.keys()].map(letter => <button key={letter} onClick={() => jumpToLetter(letter)} aria-label={`Ir ás cancións que comezan por ${letter}`} title={letter}>{letter}</button>)}</nav>}</div></section></div>}
     </section></div>
 }
