@@ -1,67 +1,58 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
-    <linearGradient id="bg" x1="70" y1="32" x2="460" y2="492" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#28a986"/>
-      <stop offset=".52" stop-color="#17654f"/>
-      <stop offset="1" stop-color="#103c35"/>
+    <linearGradient id="bg" x1="56" y1="40" x2="460" y2="492" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1a9c79"/>
+      <stop offset=".55" stop-color="#11674f"/>
+      <stop offset="1" stop-color="#073e3b"/>
     </linearGradient>
-    <linearGradient id="wood" x1="160" y1="197" x2="357" y2="428" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#ffe18a"/>
-      <stop offset=".48" stop-color="#ffb84d"/>
-      <stop offset="1" stop-color="#ee7544"/>
+    <linearGradient id="body" x1="157" y1="236" x2="359" y2="460" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffe58b"/>
+      <stop offset=".52" stop-color="#ffbb55"/>
+      <stop offset="1" stop-color="#f27655"/>
     </linearGradient>
-    <linearGradient id="neck" x1="247" y1="63" x2="282" y2="286" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#f6d88c"/>
-      <stop offset="1" stop-color="#c97b43"/>
+    <linearGradient id="neck" x1="231" y1="57" x2="286" y2="305" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff1bb"/>
+      <stop offset="1" stop-color="#d18a52"/>
     </linearGradient>
-    <radialGradient id="glow" cx="0" cy="0" r="1" gradientTransform="matrix(0 113 -113 0 356 140)" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#ffc75e" stop-opacity=".55"/>
-      <stop offset="1" stop-color="#ffc75e" stop-opacity="0"/>
+    <radialGradient id="light" cx="0" cy="0" r="1" gradientTransform="matrix(0 172 -172 0 369 133)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8de5c7" stop-opacity=".36"/>
+      <stop offset="1" stop-color="#8de5c7" stop-opacity="0"/>
     </radialGradient>
-    <filter id="shadow" x="112" y="30" width="302" height="445" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse">
+    <filter id="shadow" x="92" y="34" width="332" height="460" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse">
       <feGaussianBlur in="SourceAlpha" stdDeviation="10"/>
-      <feOffset dy="12"/>
-      <feComponentTransfer><feFuncA type="linear" slope=".24"/></feComponentTransfer>
+      <feOffset dy="10"/>
+      <feComponentTransfer><feFuncA type="linear" slope=".26"/></feComponentTransfer>
       <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
   </defs>
-  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
-  <circle cx="356" cy="140" r="112" fill="url(#glow)"/>
-  <circle cx="356" cy="140" r="72" fill="#ffd477" opacity=".13"/>
-  <path d="M79 319c-13-28-12-62 2-91m-31 108c-20-39-18-85 3-121" fill="none" stroke="#a8f0ce" stroke-linecap="round" stroke-width="9" opacity=".7"/>
-  <path d="M429 285c13-28 12-62-2-91m31 108c20-39 18-85-3-121" fill="none" stroke="#8edee7" stroke-linecap="round" stroke-width="9" opacity=".72"/>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <circle cx="369" cy="133" r="172" fill="url(#light)"/>
+  <circle cx="101" cy="396" r="4" fill="#ffe18a" opacity=".85"/>
+  <circle cx="414" cy="355" r="5" fill="#ff9a75" opacity=".9"/>
 
-  <g filter="url(#shadow)" transform="rotate(-7 256 256)">
-    <!-- Headstock and neck -->
-    <path d="M240 79c-13-8-18-20-16-32 2-13 13-20 27-17l19 4 19-3c12-2 22 6 22 18 0 12-7 23-20 30l-3 18h-47z" fill="#ffcb6b" stroke="#ffe7a8" stroke-width="5" stroke-linejoin="round"/>
-    <path d="M245 86h39v198h-39z" fill="url(#neck)" stroke="#ffe7a8" stroke-width="4"/>
-    <path d="M249 91h31v191h-31z" fill="#704631"/>
-    <path d="M253 93v190m7-190v190m7-190v190m7-190v190" stroke="#fff1ce" stroke-width="1.5" opacity=".9"/>
-    <path d="M245 117h39m-39 19h39m-39 20h39m-39 21h39m-39 23h39m-39 25h39m-39 27h39m-39 28h39" stroke="#e8bd74" stroke-width="2.5" opacity=".9"/>
-    <path d="M231 49h-11m-1 16h15m95-13h-13m14 17h-16" stroke="#fff0c9" stroke-width="5" stroke-linecap="round"/>
+  <g filter="url(#shadow)" transform="rotate(-11 256 256)">
+    <!-- Fretboard and headstock -->
+    <path d="M237 82c-11-9-16-21-13-33 3-13 14-19 28-16l15 3 15-3c13-2 23 6 23 18 0 13-7 23-20 31l-2 17h-44z" fill="#ffd16e" stroke="#fff0bc" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M237 94h48v211h-48z" fill="url(#neck)" stroke="#fff0bc" stroke-width="4"/>
+    <path d="M242 100h38v198h-38z" fill="#624333"/>
+    <path d="M246 112v186m8-186v186m8-186v186m8-186v186m8-186v186" stroke="#fff3d2" stroke-width="1.7" opacity=".9"/>
+    <path d="M238 127h46m-46 20h46m-46 21h46m-46 23h46m-46 25h46m-46 27h46m-46 29h46" stroke="#e8bb78" stroke-width="3"/>
+    <path d="M230 49h-12m-2 18h15m92-18h-13m14 18h-16" stroke="#fff0c9" stroke-width="5" stroke-linecap="round"/>
 
-    <!-- Acoustic body -->
-    <path d="M245 267c-20-23-47-31-70-18-28 16-38 53-27 82 7 18 24 29 25 47 1 39 37 68 83 68s82-29 83-68c1-18 18-29 25-47 11-29 1-66-27-82-23-13-50-5-70 18z" fill="url(#wood)" stroke="#ffe7a8" stroke-width="7" stroke-linejoin="round"/>
-    <path d="M270 278c19-20 44-25 62-13 18 12 25 35 20 54-5 18-22 28-23 47-2 25-25 45-54 48 18-27 18-57 4-82-11-20-20-35-9-54z" fill="#ff8060" opacity=".75"/>
-    <path d="M196 295c13-12 28-16 44-10m-41 23c9-6 17-8 26-7" fill="none" stroke="#fff1bb" stroke-linecap="round" stroke-width="5" opacity=".8"/>
-
-    <!-- Sound hole and rosette -->
-    <circle cx="264" cy="338" r="42" fill="#f7d98f"/>
-    <circle cx="264" cy="338" r="34" fill="#17604b" stroke="#fff2c8" stroke-width="4"/>
-    <circle cx="264" cy="338" r="25" fill="#103b35"/>
-    <path d="M242 367h44l-5 13h-34z" fill="#754734" stroke="#ffda87" stroke-width="3" stroke-linejoin="round"/>
-    <path d="M248 88v276m6-276v276m6-276v276m6-276v276m6-276v276m6-276v276" stroke="#fff5d6" stroke-width="1.5" opacity=".9"/>
-    <path d="M237 383h54" stroke="#fff0be" stroke-width="5" stroke-linecap="round"/>
+    <!-- Bold acoustic body -->
+    <path d="M250 261c-20-27-55-35-82-18-31 20-39 60-24 92 10 20 25 32 22 52-5 34 20 68 59 78 36 9 77-2 94-29 17-26 7-45-3-64-8-16-9-31 5-50 24-34 22-76-5-102-25-24-59-20-79 9-2 3-5 6-7 10z" fill="url(#body)" stroke="#fff0bc" stroke-width="8" stroke-linejoin="round"/>
+    <path d="M260 271c16-20 39-27 57-17 17 10 25 31 20 50-4 16-18 29-18 45 0 19 17 34 15 53-2 26-24 45-51 48 12-25 10-49-3-72-12-22-27-41-20-66z" fill="#f47a5e" opacity=".72"/>
+    <circle cx="259" cy="346" r="43" fill="#fff0bc"/>
+    <circle cx="259" cy="346" r="35" fill="#17644d" stroke="#f5cf77" stroke-width="5"/>
+    <circle cx="259" cy="346" r="26" fill="#103e39"/>
+    <path d="M235 391h48l-5 14h-38z" fill="#724735" stroke="#ffdf91" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M247 99v294m6-294v294m6-294v294m6-294v294m6-294v294m6-294v294" stroke="#fff8dd" stroke-width="1.7" opacity=".92"/>
+    <path d="M230 408h58" stroke="#fff0bc" stroke-width="5" stroke-linecap="round"/>
   </g>
 
-  <!-- Floating notes -->
-  <g fill="#ff8b78">
-    <path d="M117 139v47a13 13 0 1 1-8-12v-39l39-9v40a13 13 0 1 1-8-12v-18z"/>
+  <!-- A single bright note keeps the music cue visible at small sizes. -->
+  <g fill="#ff9077" stroke="#073e3b" stroke-width="4" stroke-linejoin="round">
+    <path d="M375 183v51a14 14 0 1 1-9-13v-42l48-11v46a14 14 0 1 1-9-13v-28z"/>
   </g>
-  <g fill="#9fe6d2">
-    <path d="M383 355v35a11 11 0 1 1-7-10v-30l31-7v30a11 11 0 1 1-7-10v-13z"/>
-  </g>
-  <path d="M390 94l5 12 13 2-10 8 3 13-11-7-11 7 3-13-10-8 13-2z" fill="#fff0a5"/>
-  <circle cx="117" cy="236" r="5" fill="#ffd477"/>
-  <circle cx="399" cy="408" r="6" fill="#ff9c72"/>
+  <path d="M386 94l5 12 13 2-10 8 3 13-11-7-11 7 3-13-10-8 13-2z" fill="#fff1a8"/>
 </svg>
