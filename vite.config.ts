@@ -6,7 +6,7 @@ export default defineConfig({
   base: './',
   plugins: [react(), VitePWA({
     registerType: 'autoUpdate',
-    includeAssets: ['cancioneiro.svg', 'apple-touch-icon.png', 'cancioneiro-192.png', 'cancioneiro-512.png'],
+    includeAssets: ['cancioneiro.svg', 'apple-touch-icon-v2.png', 'cancioneiro-192-v2.png', 'cancioneiro-512-v2.png'],
     manifest: {
       id: './',
       name: 'O Meu Cancioneiro',
@@ -18,8 +18,8 @@ export default defineConfig({
       display: 'standalone',
       start_url: './',
       icons: [
-        { src: 'cancioneiro-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-        { src: 'cancioneiro-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+        { src: 'cancioneiro-192-v2.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+        { src: 'cancioneiro-512-v2.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
       ]
     },
     workbox: { navigateFallback: 'index.html', globPatterns: ['**/*.{js,css,html,svg,webmanifest}'] }
