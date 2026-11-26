@@ -16,7 +16,7 @@ export function songMatchesQuery(song: Song, query: string): boolean {
     song.title,
     song.subtitle,
     song.artist,
-    ...song.tags,
+    ...(song.tags ?? []),
     lyricsAndChords,
   ].join(' '))
 

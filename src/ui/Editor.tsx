@@ -3,21 +3,24 @@ import { Check, ChevronDown, Heart, Plus, Search, Star, X } from 'lucide-react'
 import type { AppSettings, Song } from '../types'
 import { chordSymbols, documentToEditorText, editorTextToDocument } from '../domain/chordpro'
 import { insertChordAtCursor } from '../domain/music'
+import { normalizeTag, STANDARD_TAGS, STANDARD_TAG_GROUPS } from '../domain/tags'
 
-export default function Editor({ song, settings, onClose, onSave, onSettings }: {
+export default function Editor({ song, settings, existingTags = [], onClose, onSave, onSettings }: {
   song: Song
   settings: AppSettings
+  existingTags?: string[]
   onClose: () => void
   onSave: (song: Song) => Promise<void>
   onSettings: (settings: AppSettings) => Promise<void>
 }) {
-  const [draft, setDraft] = useState<Song>({ ...song, tags: [...song.tags] })
+  const [draft, setDraft] = useState<Song>({ ...song, tags: [...(song.tags ?? [])] })
   const [text, setText] = useState(() => documentToEditorText(song.document))
   const [activeGroup, setActiveGroup] = useState<'song' | 'favorites' | 'recent' | 'search'>('song')
   const [query, setQuery] = useState('')
   const [newChord, setNewChord] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [tagInput, setTagInput] = useState('')
   const [cursor, setCursor] = useState(0)
   const area = useRef<HTMLTextAreaElement>(null)
   const nextCursor = useRef<number | null>(null)
@@ -25,6 +28,21 @@ export default function Editor({ song, settings, onClose, onSave, onSettings }: 
   const songChords = useMemo(() => chordSymbols(text), [text])
   const candidateChords = useMemo(() => [...new Set([...songChords, ...settings.favoriteChords, ...settings.recentChords, 'A', 'Am', 'B', 'Bm', 'C', 'C7', 'Cadd9', 'D', 'D7', 'Dm', 'E', 'Em', 'F', 'F#m', 'G'])].sort((a, b) => a.localeCompare(b)), [songChords, settings])
   const visibleChords = activeGroup === 'song' ? songChords : activeGroup === 'favorites' ? settings.favoriteChords : activeGroup === 'recent' ? settings.recentChords : candidateChords.filter(chord => chord.toLocaleLowerCase().includes(query.toLocaleLowerCase()))
+  const tagOptions = useMemo(() => [...new Map([...STANDARD_TAGS, ...existingTags, ...(draft.tags ?? [])].map(tag => [normalizeTag(tag), tag.trim()])).values()].filter(Boolean), [existingTags, draft.tags])
+  const customTags = tagOptions.filter(tag => !STANDARD_TAGS.some(standard => normalizeTag(standard) === normalizeTag(tag)))
+  const addTag = (value = tagInput) => {
+    const normalized = normalizeTag(value)
+    if (!normalized) return
+    const canonical = tagOptions.find(tag => normalizeTag(tag) === normalized) ?? value.trim().replace(/\s+/g, ' ')
+    if (!draft.tags.some(tag => normalizeTag(tag) === normalized)) setDraft(current => ({ ...current, tags: [...current.tags, canonical] }))
+    setTagInput('')
+  }
+  const toggleTag = (tag: string) => {
+    const normalized = normalizeTag(tag)
+    setDraft(current => ({ ...current, tags: current.tags.some(item => normalizeTag(item) === normalized)
+      ? current.tags.filter(item => normalizeTag(item) !== normalized)
+      : [...current.tags, tag] }))
+  }
 
   useLayoutEffect(() => {
     if (nextCursor.current === null || !area.current) return
@@ -79,6 +97,13 @@ export default function Editor({ song, settings, onClose, onSave, onSettings }: 
           <label>Tempo · BPM<input type="number" min="20" max="300" value={draft.tempo ?? ''} onChange={e => setDraft({ ...draft, tempo: e.target.value ? Number(e.target.value) : null })}/></label>
         </div>
         <label className="favorite-toggle"><input type="checkbox" checked={draft.favorite} onChange={e => setDraft({ ...draft, favorite: e.target.checked })}/><Heart size={16}/> Favorita</label>
+        <section className="song-tags-editor" aria-label="Etiquetas da canción">
+          <div className="tag-section-heading"><div><span className="eyebrow">CLASIFICACIÓN</span><h3>Etiquetas</h3></div><span>{draft.tags.length} seleccionadas</span></div>
+          {draft.tags.length > 0 && <div className="selected-tags">{draft.tags.map(tag => <button type="button" className="tag-chip selected" key={normalizeTag(tag)} onClick={() => toggleTag(tag)} aria-label={`Quitar etiqueta ${tag}`}>{tag}<X size={13}/></button>)}</div>}
+          <label className="tag-entry">Engadir ou crear unha etiqueta<input value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag() } }} placeholder="Escribe para buscar ou crear" list="song-tag-options"/><datalist id="song-tag-options">{tagOptions.map(tag => <option key={normalizeTag(tag)} value={tag}/>)}</datalist><button type="button" className="secondary-button" onClick={() => addTag()} disabled={!tagInput.trim()}><Plus size={15}/> Engadir</button></label>
+          {STANDARD_TAG_GROUPS.map(group => <div className="tag-group" key={group.title}><span>{group.title}</span><div className="tag-options">{group.tags.map(tag => <button type="button" key={tag} className={draft.tags.some(item => normalizeTag(item) === normalizeTag(tag)) ? 'tag-chip selected' : 'tag-chip'} onClick={() => toggleTag(tag)}>{tag}</button>)}</div></div>)}
+          {customTags.length > 0 && <div className="tag-group"><span>Etiquetas creadas</span><div className="tag-options">{customTags.map(tag => <button type="button" key={normalizeTag(tag)} className={draft.tags.some(item => normalizeTag(item) === normalizeTag(tag)) ? 'tag-chip selected' : 'tag-chip'} onClick={() => toggleTag(tag)}>{tag}</button>)}</div></div>}
+        </section>
         <section className="lyrics-panel"><div className="panel-title"><div><span className="eyebrow">EDITOR CHORDPRO</span><h3>Letra e acordes</h3></div><span className="editor-hint">Toca un acorde abaixo para inserilo xunto ao cursor.</span></div>
           <textarea ref={area} className="lyrics-input" value={text} onChange={e => setText(e.target.value)} onSelect={e => setCursor(e.currentTarget.selectionStart)} spellCheck={false} placeholder={'{start_of_verse}\n[G]Escribe aquí a letra\n{end_of_verse}'} aria-label="Letra con acordes en sintaxe ChordPro"/>
         </section>

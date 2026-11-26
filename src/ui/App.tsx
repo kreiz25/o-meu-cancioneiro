@@ -3,6 +3,7 @@ import { BookHeart, BookOpen, Download, Guitar, House, ListMusic, Music2, Plus, 
 import { db, requestPersistentStorage } from '../db'
 import { DEFAULT_SETTINGS, type AppSettings, type Repertoire, type RepertoireEntry, type Song } from '../types'
 import { editorTextToDocument, exportChordPro } from '../domain/chordpro'
+import { cleanTags } from '../domain/tags'
 import { createStoredZip } from '../services/archive'
 import Editor from './Editor'
 import Library from './Library'
@@ -108,20 +109,24 @@ export default function App() {
     setToast(`${selected.length} canción(s) preparadas para exportar.`)
   }
   const finishImport = async (items: ImportItem[], confirmReplace: boolean) => {
+    let tagUpdates = 0
     await db.transaction('rw', db.songs, async () => {
       for (const item of items) {
         const parsed = item.parsed
         if (!parsed || item.choice === 'skip') continue
         const now = new Date().toISOString()
-        if (item.choice === 'replace' && confirmReplace && item.duplicateId) {
+        if (item.choice === 'tags' && item.duplicateId && parsed.tags.length > 0) {
           const old = await db.songs.get(item.duplicateId)
-          if (old) await db.songs.put({ ...old, title: parsed.title, subtitle: parsed.subtitle, artist: parsed.artist, originalKey: parsed.key, capo: parsed.capo, tempo: parsed.tempo, document: parsed.document, updatedAt: now })
+          if (old) { await db.songs.put({ ...old, tags: cleanTags([...(old.tags ?? []), ...parsed.tags]), updatedAt: now }); tagUpdates++ }
+        } else if (item.choice === 'replace' && confirmReplace && item.duplicateId) {
+          const old = await db.songs.get(item.duplicateId)
+          if (old) await db.songs.put({ ...old, title: parsed.title, subtitle: parsed.subtitle, artist: parsed.artist, originalKey: parsed.key, capo: parsed.capo, tempo: parsed.tempo, tags: cleanTags([...(old.tags ?? []), ...parsed.tags]), document: parsed.document, updatedAt: now })
         } else if (item.choice === 'new') {
-          await db.songs.add({ id: crypto.randomUUID(), title: parsed.title, subtitle: parsed.subtitle, artist: parsed.artist, originalKey: parsed.key, capo: parsed.capo, tempo: parsed.tempo, notes: '', rhythm: '', tags: [], favorite: false, createdAt: now, updatedAt: now, document: parsed.document })
+          await db.songs.add({ id: crypto.randomUUID(), title: parsed.title, subtitle: parsed.subtitle, artist: parsed.artist, originalKey: parsed.key, capo: parsed.capo, tempo: parsed.tempo, notes: '', rhythm: '', tags: parsed.tags, favorite: false, createdAt: now, updatedAt: now, document: parsed.document })
         }
       }
     })
-    await refresh(); setToast('Importación completada.'); setImportItems(null)
+    await refresh(); setToast(tagUpdates ? `Etiquetas aplicadas a ${tagUpdates} canción(s).` : 'Importación completada.'); setImportItems(null)
   }
 
   const showPerformance = (song: Song, key: string, queue?: Performing['queue']) => setPerformance({ song, key, queue })
@@ -140,7 +145,7 @@ export default function App() {
       </main>
     </div>
     <nav className="bottom-nav">{navItems.map(([id, Icon, label]) => <button key={id} className={tab === id ? 'active' : ''} onClick={() => currentTab(id as Tab)}><Icon size={19}/><span>{label}</span></button>)}</nav>
-    {editor && <Editor key={editor.id} song={editor} settings={settings} onClose={() => setEditor(null)} onSave={saveSong} onSettings={updateSettings}/>}
+    {editor && <Editor key={editor.id} song={editor} settings={settings} existingTags={[...new Set(songs.flatMap(song => song.tags ?? []))]} onClose={() => setEditor(null)} onSave={saveSong} onSettings={updateSettings}/>}
     {importItems && <ImportReview items={importItems} songs={songs} onClose={() => setImportItems(null)} onImport={finishImport}/>}
     {performance && <Performance key={performance.song.id} song={performance.song} keyOverride={performance.key} queue={performance.queue} settings={settings} onSettings={updateSettings} onClose={() => setPerformance(null)} onQueueIndex={(song, key) => setPerformance(current => current ? { ...current, song, key } : null)}/>}
     {toast && <div className="toast"><ShieldCheck size={16}/>{toast}</div>}

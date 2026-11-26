@@ -1,4 +1,5 @@
 import type { Song, SongDocument, SongEvent, SongLine, SongSection, SectionKind } from '../types'
+import { cleanTags, normalizeTag } from './tags'
 
 export interface ParsedChordPro {
   title: string
@@ -7,6 +8,7 @@ export interface ParsedChordPro {
   key: string
   capo: number
   tempo: number | null
+  tags: string[]
   document: SongDocument
   warnings: string[]
   chords: string[]
@@ -33,6 +35,7 @@ export function parseChordPro(source: string, fallbackTitle = ''): ParsedChordPr
   const normalized = source.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n')
   const lines = normalized.split('\n')
   let title = '', subtitle = '', artist = '', key = '', capo = 0, tempo: number | null = null
+  const tags: string[] = []
   let kind: SectionKind = 'verse'
   let current: SongLine[] = []
   const sections: SongSection[] = []
@@ -67,6 +70,10 @@ export function parseChordPro(source: string, fallbackTitle = ''): ParsedChordPr
         if (/^\d+$/.test(value) && Number(value) >= 20 && Number(value) <= 300) tempo = Number(value)
         else warnings.push(`Tempo non válido na liña ${index + 1}: ${value}`)
         break
+      case 'tag': case 'tags':
+        recognized = true
+        tags.push(...value.split(/\s*[,;|]\s*/).filter(Boolean))
+        break
       default:
         current.push({ id: id(), events: [{ kind: 'directive', value: line }] })
         if (!known.has(name)) warnings.push(`Directiva conservada sen interpretar: {${directive.name}} (liña ${index + 1})`)
@@ -78,7 +85,7 @@ export function parseChordPro(source: string, fallbackTitle = ''): ParsedChordPr
   const validChord = chords.some(isChordSymbol)
   if (!recognized && !validChord) throw new Error('O contido non parece unha canción ChordPro válida.')
   const document: SongDocument = { formatVersion: 1, sections: normalizedSections, originalChordPro: source, preservedDirectives: [] }
-  return { title: title || fallbackTitle || subtitle, subtitle, artist, key, capo, tempo, document, warnings, chords, verseCount: normalizedSections.filter(s => s.kind === 'verse').length }
+  return { title: title || fallbackTitle || subtitle, subtitle, artist, key, capo, tempo, tags: canonicalizeTags(tags), document, warnings, chords, verseCount: normalizedSections.filter(s => s.kind === 'verse').length }
 }
 
 export function parseLine(value: string): SongLine {
@@ -131,12 +138,13 @@ export function editorTextToDocument(text: string): SongDocument {
   return { formatVersion: 1, sections: sections.length ? sections : [{ id: id(), kind: 'verse', lines: [] }], preservedDirectives: [] }
 }
 
-export function exportChordPro(song: Pick<Song, 'title' | 'subtitle' | 'artist' | 'originalKey' | 'capo' | 'tempo' | 'document'>): string {
+export function exportChordPro(song: Pick<Song, 'title' | 'subtitle' | 'artist' | 'originalKey' | 'capo' | 'tempo' | 'tags' | 'document'>): string {
   const output: string[] = []
   const meta = (name: string, value: string) => { if (value.trim()) output.push(`{${name}: ${value}}`) }
   meta('title', song.title); meta('subtitle', song.subtitle); meta('artist', song.artist); meta('key', song.originalKey)
   if (song.capo > 0) output.push(`{capo: ${song.capo}}`)
   if (song.tempo !== null) output.push(`{tempo: ${song.tempo}}`)
+  for (const tag of cleanTags(song.tags)) meta('tag', tag)
   for (const section of song.document.sections) {
     output.push(startDirective(section.kind))
     for (const line of section.lines) output.push(line.events.map(event => event.kind === 'text' ? event.value : event.kind === 'chord' ? `[${event.symbol}]` : event.value).join(''))
@@ -163,6 +171,16 @@ function startDirective(kind: SectionKind): string {
 }
 function endDirective(kind: SectionKind): string {
   return ({ verse: '{end_of_verse}', chorus: '{end_of_chorus}', bridge: '{end_of_bridge}', intro: '{end_of_intro}', outro: '{end_of_outro}', other: '{end_of_verse}' })[kind]
+}
+function canonicalizeTags(tags: string[]): string[] {
+  const aliases: Record<string, string> = {
+    'salmo': 'Salmo interleccional', 'interleccional': 'Salmo interleccional',
+    'aleluya': 'Aleluia', 'alleluia': 'Aleluia',
+    'comunion': 'Comuñón', 'comunhao': 'Comuñón', 'comuñon': 'Comuñón',
+    'nosopai': 'Pai Noso', 'pai nosso': 'Pai Noso', 'padre nuestro': 'Pai Noso',
+    'envio': 'Saída', 'salida': 'Saída', 'agnus dei': 'Agnus Dei'
+  }
+  return cleanTags(tags.map(tag => aliases[normalizeTag(tag)] ?? tag))
 }
 function unique<T>(items: T[]): T[] { return [...new Set(items)] }
 function id(): string { return crypto.randomUUID() }
