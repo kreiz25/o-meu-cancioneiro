@@ -1,5 +1,5 @@
 import type { Song, SongDocument, SongEvent, SongLine, SongSection, SectionKind } from '../types'
-import { cleanTags, normalizeTag } from './tags'
+import { cleanTags, normalizeTag } from './tags.ts'
 
 export interface ParsedChordPro {
   title: string
